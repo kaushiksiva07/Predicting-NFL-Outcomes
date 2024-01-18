@@ -1,0 +1,25 @@
+<!-- week_data.html -->
+<table>
+    <thead>
+        <tr>
+            <th>Home Team</th>
+            <th>Away Team</th>
+            <th>Predicted Winner</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item, prediction in data_with_predictions %}
+        <tr>
+            <td>{{ item.home_team }}</td>
+            <td>{{ item.away_team }}</td>
+            <td>
+                {% if prediction == 1 %}
+                    {{ item.home_team }}
+                {% else %}
+                    {{ item.away_team }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

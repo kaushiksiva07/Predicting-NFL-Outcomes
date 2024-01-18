@@ -1,0 +1,34 @@
+/* nflpreds.css */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+select {
+    padding: 10px;
+    margin: 20px 0;
+    width: 50%;
+}
+
+table {
+    padding: 50px;
+    width: 30%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+th, td {
+    width: 33.33%; 
+    text-align: center; 
+}

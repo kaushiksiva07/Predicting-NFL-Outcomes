@@ -15,5 +15,8 @@ COPY . /nflapp
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# # Install mkl_fft from Anaconda repository
+# RUN pip install --index-url https://pypi.anaconda.org/intel/simple mkl_fft
+
 # Run the application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "nfl_predictions.wsgi:application"]

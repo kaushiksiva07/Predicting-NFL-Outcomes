@@ -114,7 +114,15 @@ def main_function():
             )
             game.save()
 
+    
+def data_already_exists():
+    if GameStats.objects.exists():
+        return True
+    else:
+        return False
+
 
 # Main execution
 if __name__ == "__main__":
-    main_function()
+    if not data_already_exists():
+        main_function()

@@ -1,29 +1,53 @@
-version: '3.11.7'
+version: '3.8'
+
 services:
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/usr/share/nginx/html/static
+    depends_on:
+      - djangoapp
+
+  djangoapp:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+            python manage.py collectstatic --noinput &&
+            python manage.py import_nfl_data &&
+            gunicorn nfl_predictions.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - .:/nflapp
+      - static_volume:/nflapp/static
+      - C:/Users/Kaushik/NFLWebApp/nfl_predictions/nflpredapp/resources/:/nflapp/resources/
+    # Development
+    # ports:
+    #   - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
   db:
     image: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  web:
-    build: .
-    command: gunicorn your_project.wsgi:application --bind 0.0.0.0:8000
-    volumes:
-      - .:/app
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "8000:8000"
-    environment:
-      SECRET_KEY: ${SECRET_KEY}
-      DEBUG: ${DEBUG}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-    depends_on:
-      - db
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  static_volume:
+  

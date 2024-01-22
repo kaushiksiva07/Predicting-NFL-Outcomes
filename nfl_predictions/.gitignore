@@ -136,10 +136,11 @@ celerybeat.pid
 .venv
 env/
 venv/
-ENV/
+EN
 env.bak/
 venv.bak/
 nflpreds/
+.vscode/
 
 # Spyder project settings
 .spyderproject

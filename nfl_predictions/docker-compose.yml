@@ -21,9 +21,9 @@ services:
       - .:/nflapp
       - static_volume:/nflapp/static
       # Windows
-      - C:/Users/Kaushik/NFLWebApp/nfl_predictions/nflpredapp/resources/:/nflapp/resources/
+      # - C:/Users/Kaushik/NFLWebApp/nfl_predictions/nflpredapp/resources/:/nflapp/resources/
       # EC2 Linux
-      # -  nflpredapp/resources/:/nflapp/resources/
+      - /nfl_predictions/nflpredapp/resources/:/nflapp/resources/
     # Development
     # ports:
     #   - "8000:8000"

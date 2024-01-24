@@ -28,6 +28,8 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-9e2l4bbdr$479ulh7i4bk
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['localhost']
+# Test
+# ALLOWED_HOSTS = ['*']
 
 
 # Application definition

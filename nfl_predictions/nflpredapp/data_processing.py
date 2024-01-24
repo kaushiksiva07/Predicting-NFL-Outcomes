@@ -7,43 +7,43 @@ def import_pbp_data(seasons):
     """
     Imports play-by-play data for the given NFL seasons.
     """
-    pbp_data = pd.concat([nfl.import_pbp_data([season], downcast=True) for season in seasons])
+    pbp_data = nfl.import_pbp_data(seasons, downcast=False)
+
     return pbp_data
 
 def calculate_epa(pbp_data):
     """
-    Calculates the EPA for rushing and passing for each team, season, and week.
+    Function to calculate the EPA for rushing and passing for each team, season, and week.
     """
-    rush_off_epa = pbp_data.loc[pbp_data['rush_attempt'] == 1].groupby(['posteam', 'season', 'week'], as_index=False)['epa'].mean()
-    rush_def_epa = pbp_data.loc[pbp_data['rush_attempt'] == 1].groupby(['defteam', 'season', 'week'], as_index=False)['epa'].mean()
-    pass_off_epa = pbp_data.loc[pbp_data['pass_attempt'] == 1].groupby(['posteam', 'season', 'week'], as_index=False)['epa'].mean()
-    pass_def_epa = pbp_data.loc[pbp_data['pass_attempt'] == 1].groupby(['defteam', 'season', 'week'], as_index=False)['epa'].mean()
+    # Pre-filter data for rush and pass attempts to avoid repetitive computations
+    rush_attempts = pbp_data[pbp_data['rush_attempt'] == 1]
+    pass_attempts = pbp_data[pbp_data['pass_attempt'] == 1]
 
-    # Shift epa values by one game to predict next one
-    rush_off_epa['epa_shifted'] = rush_off_epa['epa'].shift()
-    pass_off_epa['epa_shifted'] = pass_off_epa['epa'].shift()
-    rush_def_epa['epa_shifted'] = rush_def_epa['epa'].shift()
-    pass_def_epa['epa_shifted'] = pass_def_epa['epa'].shift()
+    # Function to compute grouped mean and shifted ewma
+    def compute_epa(data, group_fields):
+        grouped_data = data.groupby(group_fields, as_index=False)['epa'].mean()
+        grouped_data['epa_shifted'] = grouped_data['epa'].shift()
+        grouped_data['ewma'] = grouped_data['epa_shifted'].ewm(min_periods=1, span=10).mean()
+        return grouped_data
 
-    # Exponentially weighted EPA's
-    rush_off_epa['ewma'] = rush_off_epa['epa_shifted'].ewm(min_periods=1, span=10).mean()
-    pass_off_epa['ewma'] = pass_off_epa['epa_shifted'].ewm(min_periods=1, span=10).mean()
-    rush_def_epa['ewma'] = rush_def_epa['epa_shifted'].ewm(min_periods=1, span=10).mean()
-    pass_def_epa['ewma'] = pass_def_epa['epa_shifted'].ewm(min_periods=1, span=10).mean()
+    # Apply the compute_epa function for each scenario
+    rush_off_epa = compute_epa(rush_attempts, ['posteam', 'season', 'week'])
+    rush_def_epa = compute_epa(rush_attempts, ['defteam', 'season', 'week'])
+    pass_off_epa = compute_epa(pass_attempts, ['posteam', 'season', 'week'])
+    pass_def_epa = compute_epa(pass_attempts, ['defteam', 'season', 'week'])
 
     return rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa
 
 def dynamic_window(epa_data):
-    """
-    Defines a dynamically shifting window for EPA calculations.
-    """
-    values = np.zeros(len(epa_data))
-    for i, (index, row) in enumerate(epa_data.iterrows()):
-        epa = epa_data.epa_shifted.iloc[:i+1]
-        if row.week > 10:
-            values[i] = epa.ewm(min_periods=1, span=row.week).mean().values[-1]
-        else:
-            values[i] = epa.ewm(min_periods=1, span=10).mean().values[-1]
+    # Use numpy to create an array of the same shape as x
+    values = np.zeros(epa_data.shape[0])
+
+    # Determine the span for each row
+    span = np.where(epa_data['week'] > 10, epa_data['week'], 10)
+
+    # Vectorized operation to calculate exponentially weighted mean
+    for i in range(len(values)):
+        values[i] = epa_data['epa_shifted'].iloc[:i+1].ewm(min_periods=1, span=span[i]).mean().iloc[-1]
 
     return pd.Series(values, index=epa_data.index)
 
@@ -81,7 +81,7 @@ def get_schedule(week):
 
 def main_function():
     GameStats.objects.all().delete()
-    seasons = range(2013, 2024)
+    seasons = list(range(2013, 2024))
     pbp_data = import_pbp_data(seasons)
     rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa = calculate_epa(pbp_data)
     stats = final_stats(pbp_data, rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa)

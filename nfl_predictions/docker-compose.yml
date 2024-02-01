@@ -15,18 +15,14 @@ services:
     command: >
       sh -c "python manage.py migrate &&
             python manage.py collectstatic --noinput &&
-            python manage.py import_nfl_data &&
             gunicorn nfl_predictions.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/nflapp
       - static_volume:/nflapp/static
       # Windows
-      # - C:/Users/Kaushik/NFLWebApp/nfl_predictions/nflpredapp/resources/:/nflapp/resources/
+      - C:/Users/Kaushik/NFLWebApp/nfl_predictions/nflpredapp/resources/:/nflapp/resources/
       # EC2 Linux
-      - /nfl_predictions/nflpredapp/resources/:/nflapp/resources/
-    # Development
-    # ports:
-    #   - "8000:8000"
+      # - /nfl_predictions/nflpredapp/resources/:/nflapp/resources/
     env_file:
       - .env
     depends_on:

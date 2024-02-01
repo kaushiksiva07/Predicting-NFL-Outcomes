@@ -7,7 +7,8 @@ def import_pbp_data(seasons):
     """
     Imports play-by-play data for the given NFL seasons.
     """
-    pbp_data = nfl.import_pbp_data(seasons, downcast=False)
+    cols = ['season', 'week', 'posteam', 'defteam', 'home_team', 'away_team', 'home_score', 'away_score', 'rush_attempt', 'pass_attempt', 'epa']
+    pbp_data = nfl.import_pbp_data(seasons, cols, downcast=True)
 
     return pbp_data
 
@@ -22,8 +23,6 @@ def calculate_epa(pbp_data):
     # Function to compute grouped mean and shifted ewma
     def compute_epa(data, group_fields):
         grouped_data = data.groupby(group_fields, as_index=False)['epa'].mean()
-        grouped_data['epa_shifted'] = grouped_data['epa'].shift()
-        grouped_data['ewma'] = grouped_data['epa_shifted'].ewm(min_periods=1, span=10).mean()
         return grouped_data
 
     # Apply the compute_epa function for each scenario
@@ -35,7 +34,7 @@ def calculate_epa(pbp_data):
     return rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa
 
 def dynamic_window(epa_data):
-    # Use numpy to create an array of the same shape as x
+    # Use numpy to create an array of the same shape as epa_data
     values = np.zeros(epa_data.shape[0])
 
     # Determine the span for each row
@@ -47,7 +46,20 @@ def dynamic_window(epa_data):
 
     return pd.Series(values, index=epa_data.index)
 
-def final_stats(pbp_data, rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa):
+def dynamic_window(epa_data):
+    # Use numpy to create an array of the same shape as epa_data
+    values = np.zeros(epa_data.shape[0])
+
+    # Determine the span for each row
+    span = np.where(epa_data['week'] > 10, epa_data['week'], 10)
+
+    # Vectorized operation to calculate exponentially weighted mean
+    for i in range(len(values)):
+        values[i] = epa_data['epa'].iloc[:i+1].ewm(min_periods=1, span=span[i]).mean().iloc[-1]
+
+    return pd.Series(values, index=epa_data.index)
+
+def final_stats(rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa):
     # Compute dynamically shifted EPA's
     rush_off_epa['ewma_dynamic'] = rush_off_epa.groupby('posteam').apply(dynamic_window).values
     pass_off_epa['ewma_dynamic'] = pass_off_epa.groupby('posteam').apply(dynamic_window).values
@@ -61,16 +73,10 @@ def final_stats(pbp_data, rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa
     # Combine offense and defense into one table
     epa = off_epa.merge(def_epa, on=['team', 'season', 'week'], suffixes=['_off', '_def'])
 
-    # Compute average EPA by week and add to epa dataframe
-    means = epa.groupby(['season', 'week'], as_index=False)[[column for column in epa.columns if 'dynamic' in column]].mean()
-    means['avg_epa'] = means[[column for column in epa.columns if 'dynamic' in column]].mean(axis=1)
-    means = means[['season', 'week', 'avg_epa']]
-    epa = epa.merge(means, on = ['season', 'week'])
-
-    # Drop first week of data
-    epa = epa.loc[epa['season'] != epa['season'].unique()[0], :]
+    # # Drop first week of data
+    epa = epa.loc[~((epa['season'] == 2013) & (epa['week'] == 1))]
     epa = epa.reset_index(drop=True)
-    
+
     return epa
 
 def get_schedule(week):
@@ -84,7 +90,7 @@ def main_function():
     seasons = list(range(2013, 2024))
     pbp_data = import_pbp_data(seasons)
     rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa = calculate_epa(pbp_data)
-    stats = final_stats(pbp_data, rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa)
+    stats = final_stats(rush_off_epa, rush_def_epa, pass_off_epa, pass_def_epa)
     for week in range(1, 19):
         if week > 1:
             prev_stats = stats.loc[(stats['week'] == (week - 1)) & (stats['season'] == 2023)]

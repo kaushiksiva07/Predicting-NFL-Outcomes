@@ -31,12 +31,6 @@ This project aims to predict the outcome of NFL games using a machine learning m
 
 * **Machine Learning**: Python, Scikit Learn 
 
-## Getting Started
-* Prerequisites
-* Docker
-* AWS CLI (configured with your AWS account)
-* Python 3.9
-
 ## Usage
 * Access the web application via http://ec2-xx-xx-xx-xx.compute-1.amazonaws.com.
 * Select a week to view predictions for upcoming NFL games.

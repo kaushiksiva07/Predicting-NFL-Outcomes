@@ -29,7 +29,7 @@ This project aims to predict the outcome of NFL games using a machine learning m
 
 * **Database**: Amazon RDS  
 
-* **Machine Learning**: Python, Logistic Regression  
+* **Machine Learning**: Python, Scikit Learn 
 
 ## Getting Started
 * Prerequisites

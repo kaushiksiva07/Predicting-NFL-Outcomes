@@ -26,9 +26,11 @@ Docker
 AWS CLI (configured with your AWS account)
 Python 3.x
 
-## Installation
-Clone the repository
-```
-git clone [repository-url]
-cd [repository-name]
-```
+## Usage
+Access the web application via http://ec2-xx-xx-xx-xx.compute-1.amazonaws.com.
+Select a week to view predictions for upcoming NFL games.
+
+## Data Pipeline
+1. Data Scraping: AWS Lambda function is triggered weekly to scrape play-by-play data.
+2. Data Storage: Raw data is stored in an S3 bucket.
+3. Data Transformation: Another Lambda function processes the raw data and updates the RDS database.
